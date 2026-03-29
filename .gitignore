@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Data and Models
+data/
+outputs/
+*.wav
+*.mp3
+!asr_transcripts.csv
+!hindi_word_classification_final.csv
+!lattice_wer_results.csv
+!wer_summary.txt
+
+# OS
+.DS_Store
+Thumbs.db

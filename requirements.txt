@@ -1,0 +1,12 @@
+requests
+pandas
+tqdm
+torch
+transformers
+datasets
+jiwer
+librosa
+numpy
+soundfile
+accelerate
+scipy

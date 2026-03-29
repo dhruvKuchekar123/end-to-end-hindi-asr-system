@@ -1,0 +1,10 @@
+Lattice-Based ASR Evaluation Results
+====================================
+Model H_WER    0.014652
+Model i_WER    0.000000
+Model k_WER    0.033455
+Model l_WER    0.029290
+Model m_WER    0.024501
+Model n_WER    0.026848
+
+Total Sentences Processed: 46
