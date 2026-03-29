@@ -34,6 +34,3 @@ This repository implements a comprehensive framework for Improving and Evaluatin
    ```bash
    python src/lattice_eval.py
    ```
-
-## 📄 Final Report
-For detailed analysis, error taxonomies, and implementation details, see [Comprehensive_Hindi_ASR_Report.docx](./Comprehensive_Hindi_ASR_Report.docx).
