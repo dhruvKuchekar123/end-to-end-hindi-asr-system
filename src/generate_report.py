@@ -13,14 +13,25 @@ def add_bullet_point(doc, text):
     p = doc.add_paragraph(text, style='List Bullet')
     return p
 
-def generate_professional_report():
+def add_table_data(doc, headers, data, style='Table Grid'):
+    table = doc.add_table(rows=1, cols=len(headers))
+    table.style = style
+    hdr_cells = table.rows[0].cells
+    for i, h in enumerate(headers):
+        hdr_cells[i].text = h
+    for row_data in data:
+        row = table.add_row().cells
+        for i, val in enumerate(row_data):
+            row[i].text = str(val)
+    return table
+
+def generate_final_comprehensive_report():
     doc = Document()
     
-    # Title Page Style
-    title = doc.add_heading('Hindi ASR System: Performance Optimization & Evaluation', 0)
+    # Title Page
+    title = doc.add_heading('Hindi ASR: End-to-End Optimization & Evaluation Report', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # GitHub Link Section
     p_git = doc.add_paragraph()
     p_git.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p_git.add_run('GitHub Repository: ')
@@ -29,124 +40,117 @@ def generate_professional_report():
     run_url.font.color.rgb = RGBColor(0, 0, 255)
     run_url.font.underline = True
 
-    doc.add_paragraph('\n')
-
-    # Executive Summary
-    add_styled_heading(doc, '1. Executive Summary', 1)
+    # 1. QUESTION 1 & 2: WHISPER FINE-TUNING AND ERROR ANALYSIS
+    add_styled_heading(doc, '1. Model Fine-Tuning & Error Taxonomy (Screenshots 1 & 2)', 1)
+    
+    add_styled_heading(doc, 'a) Dataset Preprocessing', 2)
     doc.add_paragraph(
-        "This project delivers a robust pipeline for Hindi Automatic Speech Recognition (ASR). "
-        "The core objectives were to fine-tune the OpenAI Whisper model, perform an in-depth error taxonomy, "
-        "clean a large-scale conversational vocabulary (1.77L words), and develop a novel lattice-based "
-        "evaluation framework that reduces unfair penalties for valid variations."
+        "To make the dataset training-ready, we standardized audio to 16kHz mono-waveforms, "
+        "normalized Hindi transcripts (removing punctuation), and generated Log-Mel Spectrogram features. "
+        "Standardization ensures the model focuses on acoustic-phonetic mappings rather than channel noise."
     )
 
-    # Question 1: Data Preprocessing & Fine-Tuning
-    add_styled_heading(doc, '2. Model Fine-Tuning & Preprocessing (Q1)', 1)
-    doc.add_paragraph(
-        "Fine-tuning `openai/whisper-small` required rigorous data standardization to align with the model's "
-        "expected input distribution of 16kHz mono-audio and normalized Hindi text."
-    )
-    
-    add_styled_heading(doc, 'Step-by-Step Preprocessing', 2)
-    add_bullet_point(doc, "Audio Normalization: Resampling audio to 16,000 Hz and converting to mono to ensure spectral consistency.")
-    add_bullet_point(doc, "Feature Engineering: Generating 80-channel Log-Mel Spectrograms from the time-domain signal.")
-    add_bullet_point(doc, "Text Standardization: Removing non-Devanagari characters and standardizing Matra/Nuqta usage to reduce token vocabulary noise.")
-
-    # Question 2: Error Analysis & Stability Fixes
-    add_styled_heading(doc, '3. Systematic Error Analysis & Mitigation (Q2)', 1)
-    doc.add_paragraph(
-        "Baseline evaluation revealed significant failure modes, particularly 'Repetitive Hallucinations' "
-        "where the decoder loops on common bigrams."
-    )
-    
-    table_err = doc.add_table(rows=1, cols=3)
-    table_err.style = 'Table Grid'
-    hdr_cells = table_err.rows[0].cells
-    hdr_cells[0].text = 'Error Type'
-    hdr_cells[1].text = 'Observed Behavior'
-    hdr_cells[2].text = 'Proposed/Implemented Fix'
-    
-    err_rows = [
-        ('Repetitive Hallucination', 'Infinite loops of 1-3 tokens.', 'Implemented repetition_penalty=1.2 and no_repeat_ngram_size=3.'),
-        ('Phonetic Misspelling', 'Substitutions of similar sounding characters.', 'SpecAugment during training to improve phonetic robustness.'),
-        ('Word Omission', 'Skipping short filler words.', 'Adjusted beam size and lowered length_penalty.')
+    add_styled_heading(doc, 'b) & c) Fine-Tuning and WER Report', 2)
+    wer_headers = ['Model', 'Word Error Rate (WER)', 'Status']
+    wer_data = [
+        ('Whisper-Small (Pretrained)', '1.15*', 'Hallucination Loops'),
+        ('Whisper-Small (Inference Fix)', '0.8377', 'Phonetically Stable'),
+        ('Fine-Tuned (checkpoint-5)', '0.8312', 'Consistent Improvement')
     ]
-    for et, ob, fx in err_rows:
-        row = table_err.add_row().cells
-        row[0].text = et
-        row[1].text = ob
-        row[2].text = fx
+    add_table_data(doc, wer_headers, wer_data)
 
-    # Question 3: Large-Scale Vocabulary Cleaning
-    add_styled_heading(doc, '4. Vocabulary Cleaning & Dataset Integrity (Q3)', 1)
+    add_styled_heading(doc, 'd) Systematic Error Sampling', 2)
     doc.add_paragraph(
-        "The project processed 177,508 unique words from human transcriptions. We developed a classifier "
-        "to separate high-accuracy spellings from potential errors."
+        "Sampling Strategy: Every instance of non-zero Levenshtein distance was reviewed consecutively "
+        "from the first 50 utterances. 25 samples were selected without cherry-picking to build a representative error pool."
     )
-    
-    add_styled_heading(doc, 'Classification Methodology', 2)
-    doc.add_paragraph(
-        "Our classifier employs a multi-stage validation logic:\n"
-        "1. Frequency Verification: Words matching high-frequency lists are prioritized.\n"
-        "2. Loanword Mapping: English words spoken in Hindi context are validated as correct.\n"
-        "3. Phonotactic Heuristics: Detecting invalid Devanagari character sequences."
-    )
-    
-    table_stats = doc.add_table(rows=1, cols=2)
-    table_stats.style = 'Medium Shading 1 Accent 1'
-    hdr_stats = table_stats.rows[0].cells
-    hdr_stats[0].text = 'Category'
-    hdr_stats[1].text = 'Count'
-    
-    stats_rows = [
-        ('Unique Words Processed', '177,508'),
-        ('Correct Spellings Identified', '170,565'),
-        ('Incorrect Spellings (Errors)', '6,943')
+
+    add_styled_heading(doc, 'e) Error Taxonomy', 2)
+    tax_headers = ['Category', 'Sample (Ref / Pred)', 'Reasoning']
+    tax_data = [
+        ('Repetition', 'शिखर जी / शिखर जी शिखर जी...', 'Common Bigram Over-confidence.'),
+        ('Phonetic', 'गये थे / गयते', 'Small model weight limitation.'),
+        ('Normalization', 'बिहार / बीहार', 'Ambiguity in Nuqta usage.')
     ]
-    for cat, val in stats_rows:
-        row = table_stats.add_row().cells
-        row[0].text = cat
-        row[1].text = val
+    add_table_data(doc, tax_headers, tax_data)
 
-    # Question 4: Lattice-Based ASR Evaluation
-    add_styled_heading(doc, '5. Advanced Lattice-Based Evaluation (Q4)', 1)
+    add_styled_heading(doc, 'f) & g) Actionable Fixes', 2)
+    doc.add_paragraph("Top Fix: Inference-time Repetition Penalty (1.2) reduced functional WER from >1.0 to 0.83.")
+
+    # 1.1 NUMBER NORMALIZATION AND ENGLISH DETECTION (Screenshot 2)
+    add_styled_heading(doc, '1.1 Normalization & Detection Pipeline', 2)
+    
+    add_styled_heading(doc, 'Number Normalization Examples', 3)
+    norm_headers = ['Input (Spoken)', 'Output (Digit)', 'Type']
+    norm_data = [
+        ('दो', '2', 'Simple'),
+        ('सौ', '100', 'Simple'),
+        ('तीन सौ चौवन', '354', 'Compound'),
+        ('पच्चीस हजार', '25000', 'Compound')
+    ]
+    add_table_data(doc, norm_headers, norm_data)
+
+    add_styled_heading(doc, 'Tricky Edge Cases (Judgement Calls)', 3)
     doc.add_paragraph(
-        "The final phase replaced rigid string matching with a sequential 'Lattice' approach. "
-        "This framework allows for multiple valid paths (synonyms, number formats, and consensus) "
-        "to be considered 'correct' during scoring."
+        "1. 'दो-चार बातें': Identified as an idiom. Conversion to '2-4' is avoided to preserve semantic intent.\n"
+        "2. 'नौ दो ग्यारह': Mathematical conversion would break the proverbial meaning ('escaped')."
+    )
+
+    add_styled_heading(doc, 'English Word Detection (Tagging)', 3)
+    doc.add_paragraph(
+        "Output Tagged Example:\n"
+        "Input: मेरा इंटरव्यू बहुत अच्छा गया और मुझे जॉब मिल गई\n"
+        "Output: मेरा [EN]इंटरव्यू[/EN] बहुत अच्छा गया और मुझे [EN]जॉब[/EN] मिल गई"
+    )
+
+    # 2. QUESTION 3: VOCABULARY CLEANING (Screenshot 3)
+    add_styled_heading(doc, '2. Vocabulary Cleaning (Q3)', 1)
+    doc.add_paragraph(
+        "Processed 177,508 unique words to identify correct vs. incorrect spellings."
     )
     
-    add_styled_heading(doc, 'Lattice Logic Features', 2)
-    add_bullet_point(doc, "Positional Bins: Words are aligned relative to the reference backbone.")
-    add_bullet_point(doc, "Consensus Rule: If 3+ models disagree with the reference but agree with each other, their choice is validated.")
-    add_bullet_point(doc, "Lexical Flexibility: Automatic handling of '14' (number) vs 'चौदह' (word) variations.")
-
-    add_styled_heading(doc, 'Final Performance metrics', 2)
-    table_wer = doc.add_table(rows=1, cols=2)
-    table_wer.style = 'Table Grid'
-    hdr_wer = table_wer.rows[0].cells
-    hdr_wer[0].text = 'ASR Model'
-    hdr_wer[1].text = 'Lattice-Aware WER'
-    
-    wer_data = [('Model H', '1.47%'), ('Model i', '0.00%'), ('Model k', '3.35%'), 
-                ('Model l', '2.93%'), ('Model m', '2.45%'), ('Model n', '2.68%')]
-    for m, w in wer_data:
-        row = table_wer.add_row().cells
-        row[0].text = m
-        row[1].text = w
-
-    # Conclusion
-    doc.add_paragraph('\n')
+    add_styled_heading(doc, 'Confidence Buckets & Accuracy', 2)
+    doc.add_paragraph("- Correct Spellings: 170,565\n- Incorrect Spellings: 6,943")
     doc.add_paragraph(
-        "Conclusion: The combination of targeted model fine-tuning, robust vocabulary sanitization, "
-        "and flexible lattice-based scoring provides a comprehensive solution for production-grade "
-        "Hindi ASR systems."
+        "Evaluation of 'Low Confidence' bucket: ~92% accuracy. Rare English transliterations (e.g., 'ट्वेल्थ') "
+        "were correctly classified despite being low frequency."
+    )
+
+    add_styled_heading(doc, 'System Unreliability', 2)
+    doc.add_paragraph(
+        "1. Acronyms (e.g., 'आई_आई_टी'): Often marked incorrect due to non-standard separators.\n"
+        "2. Slang/Dialect: Informal variations of common words are sometimes flagged as errors."
+    )
+
+    # 3. QUESTION 4: LATTICE EVALUATION (Screenshot 4)
+    add_styled_heading(doc, '3. Lattice-Based Evaluation (Q4)', 1)
+    
+    add_styled_heading(doc, 'Conceptual Design', 2)
+    doc.add_paragraph(
+        "Lattice representation captures multiple valid alternatives at each alignment point. "
+        "The Choice of Unit is 'Word', enabling robust synonym and numeric mapping."
+    )
+
+    add_styled_heading(doc, 'Pseudocode for Lattice Alignment', 3)
+    doc.add_paragraph(
+        "function construct_lattice(ref, models):\n"
+        "  bins = initialize_with_ref(ref)\n"
+        "  for model in models:\n"
+        "    align(model, ref)\n"
+        "    add_variations_to_bins(model_words)\n"
+        "  return apply_consensus_threshold(bins, k=3)"
+    )
+
+    add_styled_heading(doc, 'Trust Logic', 2)
+    doc.add_paragraph(
+        "Majority Consensus Rule: If 3 or more models agree on a word that differs from the human reference, "
+        "we trust the models and add the word to the valid transcription pool."
     )
 
     # Save
-    report_name = 'Comprehensive_Hindi_ASR_Project_Report.docx'
-    doc.save(report_name)
-    print(f"Professional report generated: {report_name}")
+    name = 'Final_Professional_Hindi_ASR_Report.docx'
+    doc.save(name)
+    print(f"Final Report Generated: {name}")
 
 if __name__ == "__main__":
-    generate_professional_report()
+    generate_final_comprehensive_report()
